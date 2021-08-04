@@ -5,7 +5,6 @@ from discord.ext import commands
 intents = discord.Intents.default()
 intents.members = True
 intents.dm_messages = True
-intents.reactions = True
 client = commands.Bot(command_prefix='.', intents=intents)
 
 @client.event
