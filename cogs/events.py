@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from database import cursor, connection
 import secrets
 import smtplib
 
@@ -19,7 +20,6 @@ class Events(commands.Cog):
 	async def on_message(self, message):
 
 		user = None
-
 		# if a user DM's the bot
 		if message.guild is None and not message.author.bot:
 			# fetch the user
@@ -81,6 +81,58 @@ class Events(commands.Cog):
 		except:
 			await user.send('Session has timed out, please message the bot again with "verify email" to restart the email verification process')
 			return False
+
+		# query database for existing user
+		cursor.execute("SELECT * FROM users WHERE email=:email", {'email': memberEmail.content})
+		existingUser = cursor.fetchone()
+
+		# if no user with inputted email exists, add to database
+		if not existingUser:
+			cursor.execute("INSERT INTO users VALUES (:email, :id, :num_reg)",
+			{'email': memberEmail.content, 'id': user.id, 'num_reg': 0})
+			try:
+				connection.commit()
+			except:
+				connection.rollback()
+				await user.send('An error has occured associating your email. Please contact a Trojan CS Society moderator')
+		# if the email is already associated with a user
+		else:
+			# if the usernames match, no need for change
+			if user.id == existingUser[1]:
+				await user.send('This USC email has already been validated and is associated with your current discord account')
+				return True
+			# if trying to reassociate email to a different account
+			else:
+				# if user has reassociated less than 3 times
+				if existingUser[2] < 3:
+					# prompt user if they would like to reassociate
+					await user.send(
+						f'''This USC email is currently associated with a different discord account. Would you like to associate it with this one instead?
+						changes remaining: {3-existingUser[2]}
+						enter y/n'''
+						)
+
+					# wait for user input yes or no
+					reassociate = None
+					try:
+						reassociate = await self.client.wait_for(event='message', check=lambda x: x.content == 'y' or x.content == 'n', timeout=300)
+					except:
+						await user.send('Session has timed out, please message the bot again with "verify email" to restart the email verification process')
+						return False
+
+					# if yes, update user in database
+					if reassociate.content == 'y':
+						cursor.execute("UPDATE users SET num_reg=:num_reg, id=:id WHERE email=:email",
+						{'num_reg': existingUser[2] + 1, 'id': user.id, 'email': memberEmail.content})
+						try:
+							connection.commit()
+						except:
+							connection.rollback()
+							await user.send('An error has occured associating your email. Please contact a Trojan CS Society moderator')
+					# if no
+					else:
+						await user.send('Your USC email will remain associated with your current discord account')
+						return True
 
 		await user.send('Your USC email has been validated!')
 		return True
