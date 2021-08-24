@@ -7,9 +7,10 @@ intents.members = True
 intents.dm_messages = True
 client = commands.Bot(command_prefix='.', intents=intents)
 
+
 @client.event
 async def on_ready():
-	print('Bot is ready')
+    print('Bot is ready')
 
 
 # @client.command()
@@ -18,7 +19,7 @@ async def on_ready():
 
 
 for filename in os.listdir('./cogs'):
-	if filename.endswith('.py'):
-		client.load_extension(f'cogs.{filename[:-3]}')
+    if filename.endswith('.py'):
+        client.load_extension(f'cogs.{filename[:-3]}')
 
-client.run('ODcyMzcyMTI4ODAzMDgyMjkx.YQo52w.zYtLOUoXPd46-ThmR8GPv9mC-Ts')
+client.run('ODcyMzcyMTI4ODAzMDgyMjkx.YQo52w.tAgBYqp0sOTh9FbTCKyb__p9zn4')
